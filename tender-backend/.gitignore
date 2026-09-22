@@ -1,0 +1,25 @@
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+
+# Node
+node_modules/
+dist/
+
+# Secrets and local data
+.env
+.env.local
+*.db
+
+# Supplied documents: the n8n export and the spec PDF both contain live
+# API keys, so they stay out of version control.
+tender-automation-n8n.json
+*.pdf
+
+# Editors / OS
+.DS_Store
+*.log

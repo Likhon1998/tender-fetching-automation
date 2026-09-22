@@ -1,0 +1,91 @@
+{
+  "info": {
+    "name": "Tender Automation API - v1",
+    "description": "Auth endpoints. Set the {{base_url}} variable; the access token is captured automatically after Authenticate.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:8000" },
+    { "key": "access_token", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "request": {
+        "method": "GET",
+        "url": { "raw": "{{base_url}}/health", "host": ["{{base_url}}"], "path": ["health"] }
+      }
+    },
+    {
+      "name": "Register",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"zayan\",\n  \"full_name\": \"Zayan Hussain\",\n  \"email\": \"zayan@example.com\",\n  \"password\": \"SuperSecret123\",\n  \"confirm_password\": \"SuperSecret123\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/registration",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "registration"]
+        }
+      }
+    },
+    {
+      "name": "Authenticate",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (pm.response.code === 200) {",
+              "  const data = pm.response.json();",
+              "  pm.collectionVariables.set('access_token', data.access_token);",
+              "  console.log('Token saved.');",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"identifier\": \"zayan\",\n  \"password\": \"SuperSecret123\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/authenticate",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "authenticate"]
+        }
+      }
+    },
+    {
+      "name": "Me (validate token)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+        "url": {
+          "raw": "{{base_url}}/api/v1/me",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "me"]
+        }
+      }
+    },
+    {
+      "name": "Admin - List Users",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+        "url": {
+          "raw": "{{base_url}}/api/v1/admin/users",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "admin", "users"]
+        }
+      }
+    }
+  ]
+}
