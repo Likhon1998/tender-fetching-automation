@@ -26,8 +26,6 @@ def upgrade() -> None:
         "ck_tenders_date_type", "tenders", "date_type IN ('publish', 'submission')"
     )
 
-    # Existing City Bank rows carry a deadline in the date column; everything
-    # else was a publish date. Re-running ingestion fills the rest in.
     op.execute(
         "UPDATE tenders SET date_type = 'submission', submission_date = date "
         "WHERE source_name = 'CityBank' AND date IS NOT NULL"

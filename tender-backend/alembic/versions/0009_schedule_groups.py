@@ -13,9 +13,6 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # Per-site schedules are replaced wholesale rather than migrated: the new
-    # model groups sites, and there is no sensible automatic grouping of rows
-    # that were configured one site at a time.
     op.drop_index("ix_schedules_next_run_at", table_name="schedules")
     op.drop_table("schedules")
 
@@ -26,15 +23,23 @@ def upgrade() -> None:
         sa.Column("frequency", sa.String(20), nullable=False),
         sa.Column("interval_days", sa.Integer(), nullable=True),
         sa.Column("run_at", sa.Time(), nullable=False),
-        sa.Column("enabled", sa.Boolean(), nullable=False, server_default=sa.true()),
-        sa.Column("next_run_at", sa.DateTime(timezone=True), nullable=True),
-        sa.Column("last_run_at", sa.DateTime(timezone=True), nullable=True),
+        sa.Column("enabled", sa.Boolean(), nullable=False, server_default=sa.text("1")),
+        sa.Column("next_run_at", sa.DateTime(), nullable=True),
+        sa.Column("last_run_at", sa.DateTime(), nullable=True),
         sa.Column("last_status", sa.String(20), nullable=True),
         sa.Column("last_error", sa.Text(), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False,
-                  server_default=sa.text("now()")),
-        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False,
-                  server_default=sa.text("now()")),
+        sa.Column(
+            "created_at",
+            sa.DateTime(),
+            nullable=False,
+            server_default=sa.text("CURRENT_TIMESTAMP"),
+        ),
+        sa.Column(
+            "updated_at",
+            sa.DateTime(),
+            nullable=False,
+            server_default=sa.text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
+        ),
         sa.CheckConstraint(
             "frequency IN ('daily', 'weekly', 'biweekly', 'monthly', 'custom')",
             name="ck_schedule_groups_frequency",
@@ -47,22 +52,23 @@ def upgrade() -> None:
         sa.Column("group_id", sa.BigInteger(), nullable=False),
         sa.Column("site_id", sa.BigInteger(), nullable=False),
         sa.PrimaryKeyConstraint("group_id", "site_id"),
-        sa.ForeignKeyConstraint(["group_id"], ["schedule_groups.id"],
-                                name="fk_group_sites_group", ondelete="CASCADE"),
-        sa.ForeignKeyConstraint(["site_id"], ["sites.id"],
-                                name="fk_group_sites_site", ondelete="CASCADE"),
-        # Unique across the whole table, not per group: a site belongs to at
-        # most one schedule.
+        sa.ForeignKeyConstraint(
+            ["group_id"],
+            ["schedule_groups.id"],
+            name="fk_group_sites_group",
+            ondelete="CASCADE",
+        ),
+        sa.ForeignKeyConstraint(
+            ["site_id"], ["sites.id"], name="fk_group_sites_site", ondelete="CASCADE"
+        ),
         sa.UniqueConstraint("site_id", name="uq_group_sites_site"),
     )
 
-    # Anyone who could manage sites gets the new scheduling permission, since
-    # that is who was setting schedules before it was split out.
     op.execute(
         "UPDATE users "
-        "SET capabilities = ((capabilities::jsonb) || '[\"manage_schedules\"]'::jsonb)::json "
-        "WHERE (capabilities::jsonb) @> '[\"manage_sites\"]'::jsonb "
-        "AND NOT (capabilities::jsonb) @> '[\"manage_schedules\"]'::jsonb"
+        "SET capabilities = JSON_ARRAY_APPEND(capabilities, '$', 'manage_schedules') "
+        "WHERE JSON_CONTAINS(capabilities, '\"manage_sites\"') "
+        "AND NOT JSON_CONTAINS(capabilities, '\"manage_schedules\"')"
     )
 
 
@@ -78,15 +84,23 @@ def downgrade() -> None:
         sa.Column("frequency", sa.String(20), nullable=False),
         sa.Column("interval_days", sa.Integer(), nullable=True),
         sa.Column("run_at", sa.Time(), nullable=False),
-        sa.Column("enabled", sa.Boolean(), nullable=False, server_default=sa.true()),
-        sa.Column("next_run_at", sa.DateTime(timezone=True), nullable=True),
-        sa.Column("last_run_at", sa.DateTime(timezone=True), nullable=True),
+        sa.Column("enabled", sa.Boolean(), nullable=False, server_default=sa.text("1")),
+        sa.Column("next_run_at", sa.DateTime(), nullable=True),
+        sa.Column("last_run_at", sa.DateTime(), nullable=True),
         sa.Column("last_status", sa.String(20), nullable=True),
         sa.Column("last_error", sa.Text(), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False,
-                  server_default=sa.text("now()")),
-        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False,
-                  server_default=sa.text("now()")),
+        sa.Column(
+            "created_at",
+            sa.DateTime(),
+            nullable=False,
+            server_default=sa.text("CURRENT_TIMESTAMP"),
+        ),
+        sa.Column(
+            "updated_at",
+            sa.DateTime(),
+            nullable=False,
+            server_default=sa.text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
+        ),
         sa.ForeignKeyConstraint(["site_id"], ["sites.id"], ondelete="CASCADE"),
         sa.UniqueConstraint("site_id", name="uq_schedules_site"),
     )

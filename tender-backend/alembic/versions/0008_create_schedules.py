@@ -20,19 +20,26 @@ def upgrade() -> None:
         sa.Column("frequency", sa.String(20), nullable=False),
         sa.Column("interval_days", sa.Integer(), nullable=True),
         sa.Column("run_at", sa.Time(), nullable=False),
-        sa.Column("enabled", sa.Boolean(), nullable=False, server_default=sa.true()),
-        sa.Column("next_run_at", sa.DateTime(timezone=True), nullable=True),
-        sa.Column("last_run_at", sa.DateTime(timezone=True), nullable=True),
+        sa.Column("enabled", sa.Boolean(), nullable=False, server_default=sa.text("1")),
+        sa.Column("next_run_at", sa.DateTime(), nullable=True),
+        sa.Column("last_run_at", sa.DateTime(), nullable=True),
         sa.Column("last_status", sa.String(20), nullable=True),
         sa.Column("last_error", sa.Text(), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False,
-                  server_default=sa.text("now()")),
-        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False,
-                  server_default=sa.text("now()")),
-        sa.ForeignKeyConstraint(["site_id"], ["sites.id"],
-                                name="fk_schedules_site", ondelete="CASCADE"),
-        # One schedule per site: two schedules for the same site would race
-        # each other and scrape it twice.
+        sa.Column(
+            "created_at",
+            sa.DateTime(),
+            nullable=False,
+            server_default=sa.text("CURRENT_TIMESTAMP"),
+        ),
+        sa.Column(
+            "updated_at",
+            sa.DateTime(),
+            nullable=False,
+            server_default=sa.text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
+        ),
+        sa.ForeignKeyConstraint(
+            ["site_id"], ["sites.id"], name="fk_schedules_site", ondelete="CASCADE"
+        ),
         sa.UniqueConstraint("site_id", name="uq_schedules_site"),
         sa.CheckConstraint(
             "frequency IN ('daily', 'weekly', 'biweekly', 'monthly', 'custom')",

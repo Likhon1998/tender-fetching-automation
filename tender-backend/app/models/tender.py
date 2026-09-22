@@ -45,7 +45,7 @@ class Tender(Base):
         BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True
     )
 
-    title: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
+    title: Mapped[str] = mapped_column(String(500), nullable=False, unique=True)
 
     # Normalised ISO date, null when the source gave nothing parseable.
     date: Mapped[DateType | None] = mapped_column(Date, nullable=True)

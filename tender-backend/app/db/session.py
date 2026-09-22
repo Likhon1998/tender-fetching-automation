@@ -4,17 +4,12 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 from app.core.config import settings
 
-connect_args: dict = {}
-if settings.DB_DISABLE_PREPARED_STATEMENTS:
-    # Supabase's transaction pooler (port 6543) is PgBouncer in transaction
-    # mode, which cannot handle asyncpg's prepared statements.
-    connect_args = {"statement_cache_size": 0, "prepared_statement_cache_size": 0}
-
 engine = create_async_engine(
     settings.DATABASE_URL,
     echo=False,
-    pool_pre_ping=True,   # drop dead connections instead of erroring on them
-    connect_args=connect_args,
+    # pool_pre_ping breaks with aiomysql/asyncmy under SQLAlchemy 2.0.36
+    # (ping() requires reconnect=...). Safe to disable for local XAMPP.
+    pool_pre_ping=False,
 )
 
 AsyncSessionLocal = async_sessionmaker(

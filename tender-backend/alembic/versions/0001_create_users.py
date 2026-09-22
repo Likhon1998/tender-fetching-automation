@@ -5,7 +5,6 @@ Revises:
 """
 import sqlalchemy as sa
 from alembic import op
-from sqlalchemy.dialects import postgresql
 
 revision = "0001"
 down_revision = None
@@ -14,54 +13,36 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.execute('CREATE EXTENSION IF NOT EXISTS "pgcrypto"')
-
-    user_role = postgresql.ENUM("admin", "user", name="user_role", create_type=False)
-    user_status = postgresql.ENUM(
-        "active", "pending", "disabled", name="user_status", create_type=False
-    )
-    user_role.create(op.get_bind(), checkfirst=True)
-    user_status.create(op.get_bind(), checkfirst=True)
-
     op.create_table(
         "users",
-        sa.Column(
-            "id",
-            postgresql.UUID(as_uuid=True),
-            server_default=sa.text("gen_random_uuid()"),
-            primary_key=True,
-        ),
+        sa.Column("id", sa.String(36), primary_key=True),
         sa.Column("username", sa.String(50), nullable=False),
         sa.Column("full_name", sa.String(120), nullable=False),
         sa.Column("email", sa.String(255), nullable=False),
         sa.Column("password_hash", sa.String(255), nullable=False),
-        sa.Column("role", user_role, nullable=False, server_default="user"),
-        sa.Column("status", user_status, nullable=False, server_default="active"),
+        sa.Column("role", sa.String(20), nullable=False, server_default="user"),
+        sa.Column("status", sa.String(20), nullable=False, server_default="active"),
         sa.Column(
             "created_at",
-            sa.DateTime(timezone=True),
+            sa.DateTime(),
             nullable=False,
-            server_default=sa.text("now()"),
+            server_default=sa.text("CURRENT_TIMESTAMP"),
         ),
         sa.Column(
             "updated_at",
-            sa.DateTime(timezone=True),
+            sa.DateTime(),
             nullable=False,
-            server_default=sa.text("now()"),
+            server_default=sa.text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
         ),
-        sa.Column("last_login_at", sa.DateTime(timezone=True), nullable=True),
+        sa.Column("last_login_at", sa.DateTime(), nullable=True),
+        sa.UniqueConstraint("username", name="uq_users_username"),
+        sa.UniqueConstraint("email", name="uq_users_email"),
+        sa.CheckConstraint("role IN ('admin', 'user')", name="ck_users_role"),
+        sa.CheckConstraint(
+            "status IN ('active', 'pending', 'disabled')", name="ck_users_status"
+        ),
     )
-
-    # Case-insensitive uniqueness: "Zayan" and "zayan" must not both exist.
-    op.execute(
-        "CREATE UNIQUE INDEX ix_users_username_lower ON users (lower(username))"
-    )
-    op.execute("CREATE UNIQUE INDEX ix_users_email_lower ON users (lower(email))")
 
 
 def downgrade() -> None:
-    op.drop_index("ix_users_email_lower", table_name="users")
-    op.drop_index("ix_users_username_lower", table_name="users")
     op.drop_table("users")
-    op.execute("DROP TYPE IF EXISTS user_status")
-    op.execute("DROP TYPE IF EXISTS user_role")

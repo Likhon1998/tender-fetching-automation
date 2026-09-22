@@ -137,6 +137,51 @@ input.mono, textarea.mono, .search.mono { font-family: var(--mono); font-size: 1
   white-space: pre-line;
 }
 .notice-error { background: var(--danger-soft); color: var(--danger); }
+.notice-ok { background: var(--accent-soft); color: var(--accent); }
+
+.form-intro {
+  margin: 0 0 14px;
+  color: var(--ink-soft);
+  font-size: 13px;
+  line-height: 1.45;
+}
+.field-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.field-row input { flex: 1; }
+.preset-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 12px;
+}
+.cred-box {
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper);
+}
+.cred-box > div {
+  display: grid;
+  grid-template-columns: 90px 1fr;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line);
+}
+.cred-box > div:last-child { border-bottom: none; }
+.cred-box dt {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 12px;
+}
+.cred-box dd {
+  margin: 0;
+  font-size: 14px;
+  word-break: break-all;
+}
 
 /* ── App shell ──────────────────────────────────────────────── */
 .shell { display: flex; min-height: 100vh; }
@@ -209,6 +254,13 @@ input.mono, textarea.mono, .search.mono { font-family: var(--mono); font-size: 1
 }
 .page-head h1 { margin: 0; font-size: 20px; font-weight: 600; }
 .page-count { margin: 3px 0 0; color: var(--ink-soft); }
+.page-lead {
+  margin: -8px 0 18px;
+  max-width: 54ch;
+  color: var(--ink-soft);
+  font-size: 13px;
+  line-height: 1.45;
+}
 .page-actions { display: flex; gap: 8px; align-items: center; }
 .search { width: 230px; }
 

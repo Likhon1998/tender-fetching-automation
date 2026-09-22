@@ -16,7 +16,7 @@ def upgrade() -> None:
     op.create_table(
         "tenders",
         sa.Column("id", sa.BigInteger(), primary_key=True, autoincrement=True),
-        sa.Column("title", sa.Text(), nullable=False),
+        sa.Column("title", sa.String(500), nullable=False),
         sa.Column("date", sa.Date(), nullable=True),
         sa.Column("date_raw", sa.Text(), nullable=True),
         sa.Column("pdf_link", sa.Text(), nullable=True),
@@ -28,12 +28,12 @@ def upgrade() -> None:
         sa.Column("confidence", sa.Numeric(4, 3), nullable=True),
         sa.Column("status", sa.String(30), nullable=False, server_default="new"),
         sa.Column(
-            "created_at", sa.DateTime(timezone=True), nullable=False,
-            server_default=sa.text("now()"),
+            "created_at", sa.DateTime(), nullable=False,
+            server_default=sa.text("CURRENT_TIMESTAMP"),
         ),
         sa.Column(
-            "updated_at", sa.DateTime(timezone=True), nullable=False,
-            server_default=sa.text("now()"),
+            "updated_at", sa.DateTime(), nullable=False,
+            server_default=sa.text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
         ),
         sa.ForeignKeyConstraint(
             ["site_id"], ["sites.id"], name="fk_tenders_site", ondelete="RESTRICT"
@@ -45,17 +45,13 @@ def upgrade() -> None:
         sa.CheckConstraint(
             "status IN ('new', 'not_interested')", name="ck_tenders_status"
         ),
+        sa.UniqueConstraint("title", name="uq_tenders_title"),
     )
 
-    # Unique title, per the specification: the same notice appearing on two
-    # sites is stored once.
-    op.create_unique_constraint("uq_tenders_title", "tenders", ["title"])
-
-    # Indexes for the browse screen's filters and default sort.
     op.create_index("ix_tenders_site_id", "tenders", ["site_id"])
     op.create_index("ix_tenders_category_id", "tenders", ["category_id"])
     op.create_index("ix_tenders_status", "tenders", ["status"])
-    op.create_index("ix_tenders_date", "tenders", [sa.text("date DESC NULLS LAST")])
+    op.create_index("ix_tenders_date", "tenders", ["date"])
 
 
 def downgrade() -> None:

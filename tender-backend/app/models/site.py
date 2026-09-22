@@ -25,7 +25,7 @@ class Site(Base):
     url: Mapped[str] = mapped_column(Text, nullable=False)
     strategy: Mapped[str | None] = mapped_column(String(60), nullable=True)
     active: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, default=True, server_default="true"
+        Boolean, nullable=False, default=True, server_default="1"
     )
 
     # Operational fields: without these, a site whose HTML changes silently

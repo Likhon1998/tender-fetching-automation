@@ -7,7 +7,7 @@ cutoff and relevance rules changeable without re-scraping.
 
 from datetime import date, timedelta
 
-from sqlalchemy import Select, func, or_, select
+from sqlalchemy import Select, case, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 # Aliased: this module already has a function called search_tenders.
@@ -138,8 +138,13 @@ async def search_tenders(
 
     stmt = _apply_filters(select(Tender), **filters)
     # Undated rows sort last regardless of direction, and id breaks ties so
-    # pagination stays stable across requests.
-    stmt = stmt.order_by(direction.nullslast(), Tender.id.desc())
+    # pagination stays stable across requests. case() is used instead of
+    # NULLS LAST so the same query works on MySQL/MariaDB.
+    stmt = stmt.order_by(
+        case((column.is_(None), 1), else_=0),
+        direction,
+        Tender.id.desc(),
+    )
     stmt = stmt.offset((page - 1) * page_size).limit(page_size)
 
     rows = list((await db.execute(stmt)).scalars().all())

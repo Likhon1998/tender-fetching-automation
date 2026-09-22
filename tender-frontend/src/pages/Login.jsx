@@ -63,7 +63,7 @@ export default function Login() {
         </button>
 
         <p className="entry-alt">
-          Accounts are created by an administrator.
+          Need access? Ask an administrator to create an account for you.
         </p>
 
       </form>

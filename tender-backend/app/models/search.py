@@ -15,7 +15,7 @@ from sqlalchemy import (
     Text,
     func,
 )
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import Uuid
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
@@ -71,7 +71,9 @@ class Search(Base):
     )
 
     created_by: Mapped[uuid.UUID | None] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+        Uuid(as_uuid=True).with_variant(String(36), "mysql").with_variant(String(36), "mariadb"),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
     )
     created_by_username: Mapped[str | None] = mapped_column(String(50), nullable=True)
 
@@ -82,7 +84,7 @@ class Search(Base):
 
     # Notices the classifier could not place are hidden unless asked for.
     include_uncategorised: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, default=False, server_default="false"
+        Boolean, nullable=False, default=False, server_default="0"
     )
 
     status: Mapped[str] = mapped_column(
@@ -97,7 +99,7 @@ class Search(Base):
 
     # False until the user saves a selection from the results.
     saved: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, default=False, server_default="false"
+        Boolean, nullable=False, default=False, server_default="0"
     )
     saved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     tender_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")

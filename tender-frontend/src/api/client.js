@@ -8,7 +8,7 @@
  *    message, so components can just try/catch instead of inspecting status
  */
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8001";
 const TOKEN_KEY = "tender_access_token";
 
 export class ApiError extends Error {

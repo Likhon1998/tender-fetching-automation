@@ -86,7 +86,7 @@ class ScheduleGroup(Base):
     run_at: Mapped[time] = mapped_column(Time, nullable=False)
 
     enabled: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, default=True, server_default="true"
+        Boolean, nullable=False, default=True, server_default="1"
     )
 
     # The next UTC instant this should fire. Also acts as the claim: a runner

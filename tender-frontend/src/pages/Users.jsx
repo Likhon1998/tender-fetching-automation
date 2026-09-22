@@ -12,8 +12,57 @@ const BLANK = {
   email: "",
   password: "",
   confirm_password: "",
-  capabilities: [],
+  capabilities: ["search_tenders", "save_lists", "triage_tenders"],
 };
+
+const PRESETS = [
+  {
+    id: "staff",
+    label: "Staff",
+    hint: "Search, save lists, triage tenders",
+    capabilities: ["search_tenders", "save_lists", "triage_tenders"],
+  },
+  {
+    id: "manager",
+    label: "Manager",
+    hint: "Staff plus sites, categories, schedules",
+    capabilities: [
+      "search_tenders",
+      "save_lists",
+      "triage_tenders",
+      "manage_sites",
+      "manage_categories",
+      "manage_schedules",
+    ],
+  },
+  {
+    id: "admin",
+    label: "Admin",
+    hint: "Full access, including creating accounts",
+    capabilities: [
+      "search_tenders",
+      "save_lists",
+      "triage_tenders",
+      "manage_sites",
+      "manage_categories",
+      "manage_schedules",
+      "manage_users",
+      "run_admin_tasks",
+    ],
+  },
+];
+
+function generatePassword() {
+  const letters = "abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ";
+  const digits = "23456789";
+  let out = "";
+  for (let i = 0; i < 10; i += 1) {
+    out += letters[Math.floor(Math.random() * letters.length)];
+  }
+  out += digits[Math.floor(Math.random() * digits.length)];
+  out += letters[Math.floor(Math.random() * letters.length)];
+  return out;
+}
 
 export default function Users() {
   const { user: me } = useAuth();
@@ -22,6 +71,7 @@ export default function Users() {
   const [status, setStatus] = useState("loading");
   const [error, setError] = useState("");
   const [editing, setEditing] = useState(null);
+  const [createdCreds, setCreatedCreds] = useState(null);
   const [page, setPage] = useState(1);
 
   const load = useCallback(async () => {
@@ -72,10 +122,18 @@ export default function Users() {
   return (
     <>
       <PageHeader title="Users" count={users.length}>
-        <button className="btn btn-primary" onClick={() => setEditing(BLANK)}>
-          Add user
+        <button
+          className="btn btn-primary"
+          onClick={() => setEditing({ ...BLANK, password: "", confirm_password: "" })}
+        >
+          Create account
         </button>
       </PageHeader>
+
+      <p className="page-lead">
+        Create an account for someone, choose what they can do, then share the
+        username and password so they can sign in. There is no self-registration.
+      </p>
 
       {error && <p className="notice notice-error">{error}</p>}
 
@@ -134,7 +192,7 @@ export default function Users() {
           user={editing}
           catalogue={catalogue}
           onClose={() => setEditing(null)}
-          onSaved={(saved) => {
+          onSaved={(saved, plainPassword) => {
             setUsers((prev) => {
               const exists = prev.some((u) => u.id === saved.id);
               return exists
@@ -142,10 +200,80 @@ export default function Users() {
                 : [saved, ...prev];
             });
             setEditing(null);
+            if (plainPassword) {
+              setCreatedCreds({
+                username: saved.username,
+                email: saved.email,
+                password: plainPassword,
+                full_name: saved.full_name,
+              });
+            }
           }}
         />
       )}
+
+      {createdCreds && (
+        <CredentialsShare
+          creds={createdCreds}
+          onClose={() => setCreatedCreds(null)}
+        />
+      )}
     </>
+  );
+}
+
+function CredentialsShare({ creds, onClose }) {
+  const [copied, setCopied] = useState(false);
+  const shareText = [
+    `Sign in to Tender Registry`,
+    `Name: ${creds.full_name}`,
+    `Username: ${creds.username}`,
+    `Email: ${creds.email}`,
+    `Password: ${creds.password}`,
+    ``,
+    `Open the app and sign in with the username (or email) and this password.`,
+  ].join("\n");
+
+  async function copyAll() {
+    try {
+      await navigator.clipboard.writeText(shareText);
+      setCopied(true);
+    } catch {
+      setCopied(false);
+    }
+  }
+
+  return (
+    <Modal title="Account ready — share these details" onClose={onClose}>
+      <p className="notice notice-ok">
+        {creds.full_name} can now sign in. Copy the details below and send them
+        privately. The password is shown only once here.
+      </p>
+
+      <dl className="cred-box">
+        <div>
+          <dt>Username</dt>
+          <dd className="mono">{creds.username}</dd>
+        </div>
+        <div>
+          <dt>Email</dt>
+          <dd className="mono">{creds.email}</dd>
+        </div>
+        <div>
+          <dt>Password</dt>
+          <dd className="mono">{creds.password}</dd>
+        </div>
+      </dl>
+
+      <div className="dialog-foot">
+        <button type="button" className="btn btn-quiet" onClick={onClose}>
+          Done
+        </button>
+        <button type="button" className="btn btn-primary" onClick={copyAll}>
+          {copied ? "Copied" : "Copy login details"}
+        </button>
+      </div>
+    </Modal>
   );
 }
 
@@ -155,8 +283,8 @@ function UserForm({ user, catalogue, onClose, onSaved }) {
     username: user.username || "",
     full_name: user.full_name || "",
     email: user.email || "",
-    password: "",
-    confirm_password: "",
+    password: user.password || "",
+    confirm_password: user.confirm_password || "",
     capabilities: user.capabilities || [],
   });
   const [error, setError] = useState("");
@@ -166,6 +294,10 @@ function UserForm({ user, catalogue, onClose, onSaved }) {
     setForm((prev) => ({ ...prev, [field]: value }));
   }
 
+  function applyPreset(capabilities) {
+    setForm((prev) => ({ ...prev, capabilities: [...capabilities] }));
+  }
+
   function toggleCapability(key) {
     setForm((prev) => ({
       ...prev,
@@ -173,6 +305,11 @@ function UserForm({ user, catalogue, onClose, onSaved }) {
         ? prev.capabilities.filter((c) => c !== key)
         : [...prev.capabilities, key],
     }));
+  }
+
+  function fillGeneratedPassword() {
+    const password = generatePassword();
+    setForm((prev) => ({ ...prev, password, confirm_password: password }));
   }
 
   async function handleSubmit(event) {
@@ -193,8 +330,8 @@ function UserForm({ user, catalogue, onClose, onSaved }) {
       let saved;
       if (isNew) {
         saved = await api.createUser(form);
+        onSaved(saved, form.password);
       } else {
-        // Only send what changed; an empty password field means "leave it".
         const payload = {
           full_name: form.full_name,
           email: form.email,
@@ -202,8 +339,8 @@ function UserForm({ user, catalogue, onClose, onSaved }) {
         };
         if (form.password) payload.password = form.password;
         saved = await api.updateUser(user.id, payload);
+        onSaved(saved, null);
       }
-      onSaved(saved);
     } catch (err) {
       setError(err.message);
       setBusy(false);
@@ -212,11 +349,18 @@ function UserForm({ user, catalogue, onClose, onSaved }) {
 
   return (
     <Modal
-      title={isNew ? "Add user" : `Edit ${user.username}`}
+      title={isNew ? "Create account for someone" : `Edit ${user.username}`}
       onClose={onClose}
     >
       <form onSubmit={handleSubmit}>
         {error && <p className="notice notice-error">{error}</p>}
+
+        {isNew && (
+          <p className="form-intro">
+            Fill in their details and choose access. After you create the
+            account, you will get a password to share so they can sign in.
+          </p>
+        )}
 
         {isNew && (
           <label className="field">
@@ -225,6 +369,7 @@ function UserForm({ user, catalogue, onClose, onSaved }) {
               className="mono"
               value={form.username}
               onChange={(e) => update("username", e.target.value)}
+              placeholder="e.g. rifat"
               required
             />
           </label>
@@ -252,15 +397,28 @@ function UserForm({ user, catalogue, onClose, onSaved }) {
 
         <label className="field">
           <span>{isNew ? "Password" : "New password"}</span>
-          <input
-            type="password"
-            value={form.password}
-            onChange={(e) => update("password", e.target.value)}
-            required={isNew}
-          />
+          <div className="field-row">
+            <input
+              type="text"
+              className="mono"
+              value={form.password}
+              onChange={(e) => update("password", e.target.value)}
+              required={isNew}
+              autoComplete="new-password"
+            />
+            {isNew && (
+              <button
+                type="button"
+                className="btn btn-quiet"
+                onClick={fillGeneratedPassword}
+              >
+                Generate
+              </button>
+            )}
+          </div>
           <small>
             {isNew
-              ? "At least 12 characters, with a letter and a number."
+              ? "At least 12 characters, with a letter and a number. Share this with them."
               : "Leave blank to keep the current password."}
           </small>
         </label>
@@ -268,15 +426,37 @@ function UserForm({ user, catalogue, onClose, onSaved }) {
         <label className="field">
           <span>Confirm password</span>
           <input
-            type="password"
+            type="text"
+            className="mono"
             value={form.confirm_password}
             onChange={(e) => update("confirm_password", e.target.value)}
             required={isNew}
+            autoComplete="new-password"
           />
         </label>
 
         <fieldset className="caps">
           <legend>What this account can do</legend>
+          {isNew && (
+            <div className="preset-row">
+              {PRESETS.map((preset) => (
+                <button
+                  type="button"
+                  key={preset.id}
+                  className={`btn btn-tiny ${
+                    JSON.stringify(form.capabilities) ===
+                    JSON.stringify(preset.capabilities)
+                      ? "btn-primary"
+                      : "btn-quiet"
+                  }`}
+                  title={preset.hint}
+                  onClick={() => applyPreset(preset.capabilities)}
+                >
+                  {preset.label}
+                </button>
+              ))}
+            </div>
+          )}
           {catalogue.map((cap) => (
             <label className="check cap-row" key={cap.key}>
               <input
@@ -297,7 +477,7 @@ function UserForm({ user, catalogue, onClose, onSaved }) {
             Cancel
           </button>
           <button className="btn btn-primary" disabled={busy}>
-            {busy ? "Saving…" : isNew ? "Create user" : "Save changes"}
+            {busy ? "Saving…" : isNew ? "Create account" : "Save changes"}
           </button>
         </div>
       </form>

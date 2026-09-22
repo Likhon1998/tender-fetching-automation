@@ -12,7 +12,7 @@ search into a saved list.
 import logging
 from datetime import datetime, timezone
 
-from sqlalchemy import delete, func, insert, or_, select
+from sqlalchemy import case, delete, func, insert, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import AsyncSessionLocal
@@ -398,7 +398,11 @@ async def search_results(
     direction = column.asc() if order == "asc" else column.desc()
 
     stmt = (
-        base.order_by(direction.nullslast(), Tender.id.desc())
+        base.order_by(
+            case((column.is_(None), 1), else_=0),
+            direction,
+            Tender.id.desc(),
+        )
         .offset((page - 1) * page_size)
         .limit(page_size)
     )

@@ -21,26 +21,30 @@ USER_CAPABILITIES = '["search_tenders","save_lists","triage_tenders"]'
 def upgrade() -> None:
     op.add_column(
         "users",
-        sa.Column("capabilities", sa.JSON(), nullable=False, server_default="[]"),
+        sa.Column("capabilities", sa.JSON(), nullable=True),
     )
-    # Carry existing accounts over: admins keep everything, everyone else gets
-    # the day-to-day permissions they already had in practice.
-    op.execute(f"UPDATE users SET capabilities = '{ADMIN_CAPABILITIES}' WHERE role = 'admin'")
-    op.execute(f"UPDATE users SET capabilities = '{USER_CAPABILITIES}' WHERE role = 'user'")
-
+    # MariaDB accepts a JSON string literal directly (no CAST(... AS JSON)).
+    op.execute(
+        f"UPDATE users SET capabilities = '{ADMIN_CAPABILITIES}' WHERE role = 'admin'"
+    )
+    op.execute(
+        f"UPDATE users SET capabilities = '{USER_CAPABILITIES}' WHERE role = 'user'"
+    )
+    op.execute(
+        f"UPDATE users SET capabilities = '{USER_CAPABILITIES}' "
+        "WHERE capabilities IS NULL"
+    )
+    op.alter_column("users", "capabilities", existing_type=sa.JSON(), nullable=False)
     op.drop_column("users", "role")
-    op.execute("DROP TYPE IF EXISTS user_role")
 
 
 def downgrade() -> None:
-    user_role = sa.Enum("admin", "user", name="user_role")
-    user_role.create(op.get_bind(), checkfirst=True)
     op.add_column(
         "users",
-        sa.Column("role", user_role, nullable=False, server_default="user"),
+        sa.Column("role", sa.String(20), nullable=False, server_default="user"),
     )
     op.execute(
         "UPDATE users SET role = 'admin' "
-        "WHERE capabilities::text LIKE '%manage_users%'"
+        "WHERE JSON_CONTAINS(capabilities, '\"manage_users\"')"
     )
     op.drop_column("users", "capabilities")
