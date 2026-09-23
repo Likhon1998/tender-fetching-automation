@@ -1,5 +1,7 @@
 from functools import lru_cache
+from urllib.parse import quote_plus
 
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -10,8 +12,14 @@ class Settings(BaseSettings):
         env_file=".env", env_file_encoding="utf-8", extra="ignore"
     )
 
-    # Database
-    DATABASE_URL: str
+    # Database — set either DATABASE_URL, or the DB_* parts below.
+    DATABASE_URL: str | None = None
+    DB_DRIVER: str = "mysql+asyncmy"
+    DB_USER: str = "root"
+    DB_PASSWORD: str = ""
+    DB_HOST: str = "127.0.0.1"
+    DB_PORT: int = 3306
+    DB_NAME: str = "tender-fetching"
     DB_DISABLE_PREPARED_STATEMENTS: bool = False
 
     # JWT
@@ -42,7 +50,6 @@ class Settings(BaseSettings):
     MAX_PAGES_PER_SITE: int = 5
     TENDER_CUTOFF_YEAR: int = 2026
 
-
     # Login throttling
     LOGIN_RATE_LIMIT_ATTEMPTS: int = 10
     LOGIN_RATE_LIMIT_WINDOW_SECONDS: int = 300
@@ -52,6 +59,20 @@ class Settings(BaseSettings):
     ADMIN_EMAIL: str = "admin@example.com"
     ADMIN_FULL_NAME: str = "System Administrator"
     ADMIN_PASSWORD: str = ""
+
+    @model_validator(mode="after")
+    def assemble_database_url(self) -> "Settings":
+        if self.DATABASE_URL:
+            return self
+        user = quote_plus(self.DB_USER)
+        if self.DB_PASSWORD:
+            auth = f"{user}:{quote_plus(self.DB_PASSWORD)}@"
+        else:
+            auth = f"{user}@"
+        self.DATABASE_URL = (
+            f"{self.DB_DRIVER}://{auth}{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
+        )
+        return self
 
     @property
     def cors_origin_list(self) -> list[str]:
