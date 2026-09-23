@@ -126,7 +126,7 @@ function ChangePassword() {
             autoComplete="new-password"
             required
           />
-          <small>At least 12 characters, with a letter and a number.</small>
+          <small>At least 8 characters.</small>
         </label>
 
         <label className="field">

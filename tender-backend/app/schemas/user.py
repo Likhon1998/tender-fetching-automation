@@ -12,10 +12,6 @@ USERNAME_PATTERN = r"^[A-Za-z0-9._-]+$"
 def _password_rules(v: str) -> str:
     if v.strip() == "":
         raise ValueError("Password cannot be blank")
-    if not any(c.isalpha() for c in v):
-        raise ValueError("Password must contain at least one letter")
-    if not any(c.isdigit() for c in v):
-        raise ValueError("Password must contain at least one digit")
     return v
 
 
@@ -29,8 +25,8 @@ class UserCreate(BaseModel):
     username: str = Field(min_length=3, max_length=50, pattern=USERNAME_PATTERN)
     full_name: str = Field(min_length=2, max_length=120)
     email: EmailStr
-    password: str = Field(min_length=12, max_length=128)
-    confirm_password: str = Field(min_length=12, max_length=128)
+    password: str = Field(min_length=8, max_length=128)
+    confirm_password: str = Field(min_length=8, max_length=128)
     capabilities: list[str] = Field(default_factory=list)
 
     @field_validator("username")
@@ -67,7 +63,7 @@ class UserUpdate(BaseModel):
     email: EmailStr | None = None
     capabilities: list[str] | None = None
     status: UserStatus | None = None
-    password: str | None = Field(default=None, min_length=12, max_length=128)
+    password: str | None = Field(default=None, min_length=8, max_length=128)
 
     @field_validator("capabilities")
     @classmethod
@@ -84,8 +80,8 @@ class PasswordChange(BaseModel):
     """A user changing their own password."""
 
     current_password: str = Field(min_length=1, max_length=128)
-    new_password: str = Field(min_length=12, max_length=128)
-    confirm_password: str = Field(min_length=12, max_length=128)
+    new_password: str = Field(min_length=8, max_length=128)
+    confirm_password: str = Field(min_length=8, max_length=128)
 
     @field_validator("new_password")
     @classmethod

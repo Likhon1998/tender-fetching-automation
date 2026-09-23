@@ -56,7 +56,7 @@ function generatePassword() {
   const letters = "abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ";
   const digits = "23456789";
   let out = "";
-  for (let i = 0; i < 10; i += 1) {
+  for (let i = 0; i < 6; i += 1) {
     out += letters[Math.floor(Math.random() * letters.length)];
   }
   out += digits[Math.floor(Math.random() * digits.length)];
@@ -418,7 +418,7 @@ function UserForm({ user, catalogue, onClose, onSaved }) {
           </div>
           <small>
             {isNew
-              ? "At least 12 characters, with a letter and a number. Share this with them."
+              ? "At least 8 characters. Share this with them."
               : "Leave blank to keep the current password."}
           </small>
         </label>

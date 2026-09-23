@@ -152,7 +152,7 @@ Interactive API docs: <http://localhost:8000/docs>
 |---|---|
 | `DATABASE_URL` | Supabase session pooler URI, with `postgresql+asyncpg://` as the scheme |
 | `JWT_SECRET` | `python -c "import secrets; print(secrets.token_urlsafe(64))"` |
-| `ADMIN_PASSWORD` | At least 12 characters; used once by the seed script |
+| `ADMIN_PASSWORD` | At least 8 characters; used once by the seed script |
 | `FIRECRAWL_API_KEY` | Required for scraping |
 | `CORS_ORIGINS` | Must include `http://localhost:5173` |
 | `TIMEZONE` | Zone for scheduled times, default `Asia/Dhaka` |

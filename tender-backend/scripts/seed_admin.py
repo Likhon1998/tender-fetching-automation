@@ -23,8 +23,8 @@ from app.models.user import User, UserStatus
 
 
 async def main() -> int:
-    if not settings.ADMIN_PASSWORD or len(settings.ADMIN_PASSWORD) < 12:
-        print("ERROR: set ADMIN_PASSWORD in .env to at least 12 characters.")
+    if not settings.ADMIN_PASSWORD or len(settings.ADMIN_PASSWORD) < 8:
+        print("ERROR: set ADMIN_PASSWORD in .env to at least 8 characters.")
         return 1
 
     async with AsyncSessionLocal() as db:
