@@ -6,21 +6,20 @@ python - <<'PY'
 import asyncio
 import os
 import sys
-from urllib.parse import quote_plus
 
 async def wait():
-    import asyncmy
+    import asyncpg
     host = os.getenv("DB_HOST", "db")
-    port = int(os.getenv("DB_PORT", "3306"))
-    user = os.getenv("DB_USER", "root")
+    port = int(os.getenv("DB_PORT", "5432"))
+    user = os.getenv("DB_USER", "postgres")
     password = os.getenv("DB_PASSWORD", "")
     database = os.getenv("DB_NAME", "tender-fetching")
     for attempt in range(40):
         try:
-            conn = await asyncmy.connect(
-                host=host, port=port, user=user, password=password, db=database
+            conn = await asyncpg.connect(
+                host=host, port=port, user=user, password=password, database=database
             )
-            await conn.ensure_closed()
+            await conn.close()
             print("Database is ready.")
             return
         except Exception as exc:

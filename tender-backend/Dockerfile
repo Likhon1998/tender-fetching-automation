@@ -9,15 +9,11 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends curl gcc g++ \
+    && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
-RUN pip install -r requirements.txt \
-    && apt-get update \
-    && apt-get purge -y gcc g++ \
-    && apt-get autoremove -y \
-    && rm -rf /var/lib/apt/lists/*
+RUN pip install -r requirements.txt
 
 COPY alembic.ini .
 COPY alembic ./alembic

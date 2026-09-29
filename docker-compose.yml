@@ -15,21 +15,21 @@
 ################################################################################
 
 services:
-  # Shared MariaDB — included in both profiles
+  # Shared PostgreSQL — included in both profiles
   db:
-    image: mariadb:10.11
+    image: postgres:16-alpine
     profiles: ["dev", "qa"]
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-rootpass}
-      MYSQL_DATABASE: ${DB_NAME:-tender-fetching}
-      MYSQL_ROOT_HOST: "%"
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_NAME:-tender-fetching}
     ports:
-      - "${DB_PUBLISH_PORT:-3307}:3306"
+      - "${DB_PUBLISH_PORT:-5433}:5432"
     volumes:
-      - mariadb_data:/var/lib/mysql
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
       interval: 5s
       timeout: 5s
       retries: 20
@@ -47,11 +47,11 @@ services:
       - .env.dev
     environment:
       DB_HOST: db
-      DB_PORT: "3306"
-      DB_USER: ${DB_USER:-root}
-      DB_PASSWORD: ${DB_PASSWORD:-rootpass}
+      DB_PORT: "5432"
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
       DB_NAME: ${DB_NAME:-tender-fetching}
-      DB_DRIVER: mysql+asyncmy
+      DB_DRIVER: postgresql+asyncpg
       ENVIRONMENT: development
       RUN_SEEDS: ${RUN_SEEDS:-true}
     ports:
@@ -95,11 +95,11 @@ services:
       - .env.qa
     environment:
       DB_HOST: db
-      DB_PORT: "3306"
-      DB_USER: ${DB_USER:-root}
-      DB_PASSWORD: ${DB_PASSWORD:-rootpass}
+      DB_PORT: "5432"
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
       DB_NAME: ${DB_NAME:-tender-fetching}
-      DB_DRIVER: mysql+asyncmy
+      DB_DRIVER: postgresql+asyncpg
       ENVIRONMENT: qa
       RUN_SEEDS: ${RUN_SEEDS:-true}
     ports:
@@ -126,7 +126,7 @@ services:
       - tender_net
 
 volumes:
-  mariadb_data:
+  postgres_data:
 
 networks:
   tender_net:

@@ -10,7 +10,7 @@ Built for E Generation as a replacement for an existing n8n workflow.
 
 ```
 tender-fetching-automation/
-├── tender-backend/     FastAPI, MySQL/MariaDB, scraping and classification
+├── tender-backend/     FastAPI, PostgreSQL, scraping and classification
 ├── tender-frontend/    React interface
 ├── docker-compose.yml  Dev + QA profiles (Docker)
 └── DOCKER.md           How to run with Docker
@@ -168,7 +168,7 @@ Interactive API docs: <http://localhost:8000/docs>
 
 | Variable | Notes |
 |---|---|
-| `DATABASE_URL` | Supabase session pooler URI, with `postgresql+asyncpg://` as the scheme |
+| `DB_*` or `DATABASE_URL` | PostgreSQL connection, scheme `postgresql+asyncpg://` |
 | `JWT_SECRET` | `python -c "import secrets; print(secrets.token_urlsafe(64))"` |
 | `ADMIN_PASSWORD` | At least 8 characters; used once by the seed script |
 | `FIRECRAWL_API_KEY` | Required for scraping |

@@ -2,7 +2,8 @@ import enum
 import uuid
 from datetime import datetime
 
-from sqlalchemy import JSON, DateTime, Enum, String, Uuid, func
+from sqlalchemy import JSON, DateTime, Enum, String, func
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
@@ -17,9 +18,10 @@ class UserStatus(str, enum.Enum):
 class User(Base):
     __tablename__ = "users"
 
-    # CHAR(36) on MySQL/MariaDB so dashed UUID strings match the migration.
+    # Generated in Python so the id is known before flush. The migration also
+    # sets a gen_random_uuid() default for rows inserted via raw SQL.
     id: Mapped[uuid.UUID] = mapped_column(
-        Uuid(as_uuid=True).with_variant(String(36), "mysql").with_variant(String(36), "mariadb"),
+        UUID(as_uuid=True),
         primary_key=True,
         default=uuid.uuid4,
     )
@@ -36,12 +38,7 @@ class User(Base):
         JSON, nullable=False, default=list, server_default="[]"
     )
     status: Mapped[UserStatus] = mapped_column(
-        Enum(
-            UserStatus,
-            name="user_status",
-            values_callable=lambda e: [m.value for m in e],
-            native_enum=False,
-        ),
+        Enum(UserStatus, name="user_status", values_callable=lambda e: [m.value for m in e]),
         nullable=False,
         server_default=UserStatus.ACTIVE.value,
     )

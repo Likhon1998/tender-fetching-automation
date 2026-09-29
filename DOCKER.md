@@ -13,7 +13,7 @@ There is **no production profile** in this setup.
 
 - Docker Desktop installed and running
 - Free ports: `5173` (UI), `8001` (API)
-- Dev publishes MariaDB on `3307`; QA uses `3308` by default (see env files)
+- Dev publishes PostgreSQL on `5433`; QA uses `5434` by default (see env files)
 
 ## 1. Create env files
 
@@ -51,13 +51,13 @@ docker compose -p tender-dev --profile dev down
 docker compose -p tender-qa  --profile qa  down
 ```
 
-Add `-v` to also delete the MariaDB volume.
+Add `-v` to also delete the PostgreSQL volume.
 
 ## What runs inside
 
 | Service | Image / role |
 |---|---|
-| `db` | MariaDB 10.11 |
+| `db` | PostgreSQL 16 |
 | `backend-dev` / `backend-qa` | FastAPI (migrate + optional seed on start) |
 | `frontend-dev` | Vite |
 | `frontend-qa` | nginx serving the built SPA |
@@ -66,6 +66,6 @@ Add `-v` to also delete the MariaDB volume.
 
 - Profiles are activated with `--profile dev` or `--profile qa`.
 - Env files drive ports, DB password, JWT, CORS, and `ENVIRONMENT`.
-- Backend entrypoint waits for MySQL, runs `alembic upgrade head`, then seeds admin/reference data when `RUN_SEEDS=true`.
+- Backend entrypoint waits for PostgreSQL, runs `alembic upgrade head`, then seeds admin/reference data when `RUN_SEEDS=true`.
 
 If the second profile should be named something else (for example `staging`), rename `dev` in `docker-compose.yml` and the `.env.*.example` files.

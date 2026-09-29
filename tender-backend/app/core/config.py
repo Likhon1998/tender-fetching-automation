@@ -14,11 +14,11 @@ class Settings(BaseSettings):
 
     # Database — set either DATABASE_URL, or the DB_* parts below.
     DATABASE_URL: str | None = None
-    DB_DRIVER: str = "mysql+asyncmy"
-    DB_USER: str = "root"
+    DB_DRIVER: str = "postgresql+asyncpg"
+    DB_USER: str = "postgres"
     DB_PASSWORD: str = ""
     DB_HOST: str = "127.0.0.1"
-    DB_PORT: int = 3306
+    DB_PORT: int = 5432
     DB_NAME: str = "tender-fetching"
     DB_DISABLE_PREPARED_STATEMENTS: bool = False
 
