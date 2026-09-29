@@ -44,6 +44,36 @@ docker compose -p tender-qa --env-file .env.qa --profile qa up --build
 
 Same default URLs. Use a different `-p` project name so QA does not share the DEV database volume.
 
+## 3b. QA on a VM with an existing PostgreSQL
+
+When the database already exists (created by a DBA), point `.env.qa` at it:
+
+```
+DB_HOST=<db server IP>          # Postgres on the same VM: host.docker.internal
+DB_PORT=5432
+DB_USER=<db user>
+DB_PASSWORD=<db password>
+DB_NAME=tender_fetching
+```
+
+Set the public URLs too (the API URL is baked into the frontend at build time):
+
+```
+VITE_API_BASE_URL=http://<vm-ip-or-domain>:8001
+CORS_ORIGINS=http://<vm-ip-or-domain>:5173
+JWT_SECRET=<long random string>
+```
+
+Start only the app containers (`--no-deps` skips the bundled `db`):
+
+```bash
+docker compose -p tender-qa --env-file .env.qa --profile qa up -d --build --no-deps backend-qa frontend-qa
+```
+
+The backend runs migrations and seeds on start, so the database only needs to exist and be owned by `DB_USER`.
+
+If Postgres runs directly on the VM (not in Docker), it must accept connections from the Docker network: `listen_addresses = '*'` in `postgresql.conf` and a `host all all 172.16.0.0/12 scram-sha-256` line in `pg_hba.conf`.
+
 ## 4. Stop
 
 ```bash

@@ -94,8 +94,10 @@ services:
     env_file:
       - .env.qa
     environment:
-      DB_HOST: db
-      DB_PORT: "5432"
+      # Defaults to the bundled db container; set DB_HOST/DB_PORT in .env.qa
+      # to use an external PostgreSQL (start with --no-deps, see DOCKER.md).
+      DB_HOST: ${DB_HOST:-db}
+      DB_PORT: ${DB_PORT:-5432}
       DB_USER: ${DB_USER:-postgres}
       DB_PASSWORD: ${DB_PASSWORD:-postgres}
       DB_NAME: ${DB_NAME:-tender-fetching}
@@ -104,6 +106,8 @@ services:
       RUN_SEEDS: ${RUN_SEEDS:-true}
     ports:
       - "${BACKEND_PORT:-8001}:8000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       db:
         condition: service_healthy
