@@ -1,0 +1,44 @@
+#!/bin/sh
+set -e
+
+echo "Waiting for database..."
+python - <<'PY'
+import asyncio
+import os
+import sys
+from urllib.parse import quote_plus
+
+async def wait():
+    import asyncmy
+    host = os.getenv("DB_HOST", "db")
+    port = int(os.getenv("DB_PORT", "3306"))
+    user = os.getenv("DB_USER", "root")
+    password = os.getenv("DB_PASSWORD", "")
+    database = os.getenv("DB_NAME", "tender-fetching")
+    for attempt in range(40):
+        try:
+            conn = await asyncmy.connect(
+                host=host, port=port, user=user, password=password, db=database
+            )
+            await conn.ensure_closed()
+            print("Database is ready.")
+            return
+        except Exception as exc:
+            print(f"DB not ready ({attempt + 1}/40): {exc}")
+            await asyncio.sleep(2)
+    print("Database did not become ready in time.", file=sys.stderr)
+    sys.exit(1)
+
+asyncio.run(wait())
+PY
+
+echo "Running migrations..."
+alembic upgrade head
+
+if [ "${RUN_SEEDS:-true}" = "true" ]; then
+  echo "Seeding admin and reference data (safe to re-run)..."
+  python -m scripts.seed_admin || true
+  python -m scripts.seed_reference_data || true
+fi
+
+exec "$@"

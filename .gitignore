@@ -13,6 +13,8 @@ dist/
 # Secrets and local data
 .env
 .env.local
+.env.dev
+.env.qa
 *.db
 
 # Supplied documents: the n8n export and the spec PDF both contain live

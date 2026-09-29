@@ -1,0 +1,133 @@
+################################################################################
+# Tender Fetching Automation — Docker Compose
+#
+# Two non-production profiles (not production):
+#   dev  — hot reload, source mounts, Vite + uvicorn --reload
+#   qa   — built images, nginx frontend, closer to a test/staging server
+#
+# Usage:
+#   docker compose --env-file .env.dev --profile dev up --build
+#   docker compose --env-file .env.qa  --profile qa  up --build
+#
+# Prefer separate project names so data stays isolated:
+#   docker compose -p tender-dev --env-file .env.dev --profile dev up --build
+#   docker compose -p tender-qa  --env-file .env.qa  --profile qa  up --build
+################################################################################
+
+services:
+  # Shared MariaDB — included in both profiles
+  db:
+    image: mariadb:10.11
+    profiles: ["dev", "qa"]
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-rootpass}
+      MYSQL_DATABASE: ${DB_NAME:-tender-fetching}
+      MYSQL_ROOT_HOST: "%"
+    ports:
+      - "${DB_PUBLISH_PORT:-3307}:3306"
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      - tender_net
+
+  # ---------- DEV profile ----------
+  backend-dev:
+    profiles: ["dev"]
+    build:
+      context: ./tender-backend
+      target: development
+    restart: unless-stopped
+    env_file:
+      - .env.dev
+    environment:
+      DB_HOST: db
+      DB_PORT: "3306"
+      DB_USER: ${DB_USER:-root}
+      DB_PASSWORD: ${DB_PASSWORD:-rootpass}
+      DB_NAME: ${DB_NAME:-tender-fetching}
+      DB_DRIVER: mysql+asyncmy
+      ENVIRONMENT: development
+      RUN_SEEDS: ${RUN_SEEDS:-true}
+    ports:
+      - "${BACKEND_PORT:-8001}:8000"
+    volumes:
+      - ./tender-backend/app:/app/app
+      - ./tender-backend/alembic:/app/alembic
+      - ./tender-backend/scripts:/app/scripts
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - tender_net
+
+  frontend-dev:
+    profiles: ["dev"]
+    build:
+      context: ./tender-frontend
+      target: development
+    restart: unless-stopped
+    environment:
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8001}
+    ports:
+      - "${FRONTEND_PORT:-5173}:5173"
+    volumes:
+      - ./tender-frontend/src:/app/src
+      - ./tender-frontend/index.html:/app/index.html
+    depends_on:
+      - backend-dev
+    networks:
+      - tender_net
+
+  # ---------- QA profile ----------
+  backend-qa:
+    profiles: ["qa"]
+    build:
+      context: ./tender-backend
+      target: qa
+    restart: unless-stopped
+    env_file:
+      - .env.qa
+    environment:
+      DB_HOST: db
+      DB_PORT: "3306"
+      DB_USER: ${DB_USER:-root}
+      DB_PASSWORD: ${DB_PASSWORD:-rootpass}
+      DB_NAME: ${DB_NAME:-tender-fetching}
+      DB_DRIVER: mysql+asyncmy
+      ENVIRONMENT: qa
+      RUN_SEEDS: ${RUN_SEEDS:-true}
+    ports:
+      - "${BACKEND_PORT:-8001}:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - tender_net
+
+  frontend-qa:
+    profiles: ["qa"]
+    build:
+      context: ./tender-frontend
+      target: qa
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8001}
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-5173}:80"
+    depends_on:
+      - backend-qa
+    networks:
+      - tender_net
+
+volumes:
+  mariadb_data:
+
+networks:
+  tender_net:
+    driver: bridge

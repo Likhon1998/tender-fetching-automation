@@ -10,9 +10,27 @@ Built for E Generation as a replacement for an existing n8n workflow.
 
 ```
 tender-fetching-automation/
-├── tender-backend/     FastAPI, PostgreSQL, scraping and classification
-└── tender-frontend/    React interface
+├── tender-backend/     FastAPI, MySQL/MariaDB, scraping and classification
+├── tender-frontend/    React interface
+├── docker-compose.yml  Dev + QA profiles (Docker)
+└── DOCKER.md           How to run with Docker
 ```
+
+## Docker (dev & qa)
+
+There is **no production profile**. Use Compose profiles for local work and QA:
+
+```bash
+cp .env.dev.example .env.dev
+docker compose -p tender-dev --env-file .env.dev --profile dev up --build
+```
+
+```bash
+cp .env.qa.example .env.qa
+docker compose -p tender-qa --env-file .env.qa --profile qa up --build
+```
+
+Full details: [DOCKER.md](DOCKER.md)
 
 ## How it works
 
